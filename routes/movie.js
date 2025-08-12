@@ -1,32 +1,27 @@
 const express = require("express");
 const router = express.Router();
-
-const Movie = require("../models/movie");
+const {
+    getMovies,
+    getMovie,
+    addMovie,
+    updateMovie,
+    deleteMovie,
+} = require("../controllers/movie");
 
 router.get("/", async (req, res) => {
     const director = req.query.director;
     const genre = req.query.genre;
     const rating = req.query.rating;
+    const movies = await getMovies(genre, rating, director);
 
-    let filter = {};
-    if (director) {
-        filter.director = director;
-    }
-    if (genre) {
-        filter.genre = genre;
-    }
-    if (rating) {
-        filter.rating = { $gt: rating };
-    }
-
-    const movies = await Movie.find(filter).sort({ _id: -1 });
-    res.send(movies);
+    res.status(200).send(movies);
 });
 
 router.get("/:id", async (req, res) => {
     const id = req.params.id;
-    const movie = await Movie.findById(id);
-    res.send(movie);
+    const movie = await getMovie(id);
+
+    res.status(200).send(movie);
 });
 
 router.post("/", async (req, res) => {
@@ -43,16 +38,9 @@ router.post("/", async (req, res) => {
             });
         }
 
-        const newMovie = new Movie({
-            title: title,
-            director: director,
-            release_year: release_year,
-            genre: genre,
-            rating: rating,
-        });
-        await newMovie.save();
-
-        res.status(200).send(newMovie);
+        res.status(200).send(
+            await addMovie(title, director, release_year, genre, rating)
+        );
     } catch (error) {
         res.status(400).send({ message: "Unknown error" });
     }
@@ -73,21 +61,9 @@ router.put("/:id", async (req, res) => {
             });
         }
 
-        const updatedMovie = await Movie.findByIdAndUpdate(
-            id,
-            {
-                title: title,
-                director: director,
-                release_year: release_year,
-                genre: genre,
-                rating: rating,
-            },
-            {
-                new: true,
-            }
+        res.status(200).send(
+            await updateMovie(id, title, director, release_year, genre, rating)
         );
-
-        res.status(200).send(updatedMovie);
     } catch (error) {
         res.status(400).send({ message: "Unknown Error" });
     }
@@ -96,7 +72,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     try {
         const id = req.params.id;
-        const deletedMovie = await Movie.findByIdAndDelete(id);
+        await deleteMovie(id);
         res.status(200).send({
             message: `Movie with the id of ${id} has been deleted`,
         });

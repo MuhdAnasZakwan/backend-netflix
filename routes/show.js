@@ -1,32 +1,25 @@
 const express = require("express");
 const router = express.Router();
-
-const Show = require("../models/show");
+const {
+    getShows,
+    getShow,
+    addShow,
+    updateShow,
+    deleteShow,
+} = require("../controllers/show");
 
 router.get("/", async (req, res) => {
     const genre = req.query.genre;
     const rating = req.query.rating;
     const premiere_year = req.query.premiere_year;
 
-    let filter = {};
-    if (genre) {
-        filter.genre = genre;
-    }
-    if (rating) {
-        filter.rating = { $gt: rating };
-    }
-    if (premiere_year) {
-        filter.premiere_year = { $gt: premiere_year };
-    }
-
-    const shows = await Show.find(filter).sort({ _id: -1 });
-    res.send(shows);
+    res.status(200).send(await getShows(genre, rating, premiere_year));
 });
 
 router.get("/:id", async (req, res) => {
     const id = req.params.id;
-    const show = await Show.findById(id);
-    res.send(show);
+    
+    res.status(200).send(await getShow(id));
 });
 
 router.post("/", async (req, res) => {
@@ -52,18 +45,7 @@ router.post("/", async (req, res) => {
             });
         }
 
-        const newShow = new Show({
-            title: title,
-            creator: creator,
-            premiere_year: premiere_year,
-            end_year: end_year,
-            seasons: seasons,
-            genre: genre,
-            rating: rating,
-        });
-        await newShow.save();
-
-        res.status(200).send(newShow);
+        res.status(200).send(await addShow(title, creator, premiere_year, end_year, seasons, genre, rating));
     } catch (error) {
         res.status(400).send({ message: "Unknown error" });
     }
@@ -93,23 +75,7 @@ router.put("/:id", async (req, res) => {
             });
         }
 
-        const updatedShow = await Show.findByIdAndUpdate(
-            id,
-            {
-                title: title,
-                creator: creator,
-                premiere_year: premiere_year,
-                end_year: end_year,
-                seasons: seasons,
-                genre: genre,
-                rating: rating,
-            },
-            {
-                new: true,
-            }
-        );
-
-        res.status(200).send(updatedShow);
+        res.status(200).send(await updateShow(id, title, creator, premiere_year, end_year, seasons, genre, rating));
     } catch (error) {
         res.status(400).send({ message: "Unknown Error" });
     }
@@ -118,9 +84,9 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     try {
         const id = req.params.id;
-        const deletedShow = await Show.findByIdAndDelete(id);
+        await deleteShow(id);
         res.status(200).send({
-            message: `Show with the id of ${id} has been deleted`,
+            message: `Movie with the id of ${id} has been deleted`,
         });
     } catch (error) {
         res.status(400).send({ message: "Unknown Error" });
