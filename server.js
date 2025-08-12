@@ -1,8 +1,13 @@
 const express = require("express");
 const mongoose = require("mongoose");
 
+// setup express
 const app = express();
 
+// JSON handling
+app.use(express.json());
+
+// connect to mongodb with mongoose
 async function connectToMongoDB() {
     try {
         // wait for MongoDB to connect
@@ -12,48 +17,19 @@ async function connectToMongoDB() {
         console.log(error);
     }
 }
+// trigger connection
 connectToMongoDB();
 
+// setup route
 app.get("/", (req, res) => {
     res.send("Happy coding");
 });
 
-const showSchema = new mongoose.Schema({
-    title: String,
-    creator: String,
-    premiere_year: Number,
-    end_year: Number,
-    seasons: Number,
-    genre: String,
-    rating: Number,
-});
+const movieRouter = require("./routes/movie");
+app.use("/movies", movieRouter);
 
-const Show = mongoose.model("Show", showSchema);
-
-app.get("/shows", async (req, res) => {
-    const genre = req.query.genre;
-    const rating = req.query.rating;
-    const premiere_year = req.query.premiere_year
-
-    let filter = {};
-    if (genre) {
-        filter.genre = genre;
-    }
-    if (rating) {
-        filter.rating = {$gt: rating};
-    }
-    if (premiere_year) {
-        filter.premiere_year = {$gt: premiere_year};
-    }
-
-    const shows = await Show.find(filter);
-    res.send(shows);
-});
-app.get("/shows/:id", async(req, res) => {
-    const id = req.params.id;
-    const show = await Show.findById(id);
-    res.send(show);
-})
+const showRouter = require("./routes/show");
+app.use("/shows", showRouter);
 
 // start express
 app.listen(5123, () => {
